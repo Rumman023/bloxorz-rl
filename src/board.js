@@ -14,6 +14,8 @@ export function createBoard(scene, levelMap) {
     normalTexture.uScale = 0.7;
     normalTexture.vScale = 0.7;
 
+    let targetTile = null;
+
     for (let r = 0; r < rows; r++) {
         tiles[r] = [];
         for (let c = 0; c < levelMap[r].length; c++) {
@@ -66,7 +68,10 @@ export function createBoard(scene, levelMap) {
                     
                     hollow.position = new BABYLON.Vector3(c, -tileThickness * 1.5, r); // Lowered height for cavity
                     hollow.material = mat;
-                    tiles[r][c] = hollow;    
+                    tiles[r][c] = hollow; 
+                    targetTile = { r, c };
+                    
+                    //console.log(targetTile)
                 
                //continue
                 }
@@ -89,5 +94,5 @@ export function createBoard(scene, levelMap) {
         }
     }
 
-    return { tiles, rows, cols, tileSize };
+    return { tiles, rows, cols, tileSize, targetTile};
 }

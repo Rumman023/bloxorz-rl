@@ -3,11 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Bloxorz Reinforcement Learning</title>
+    <title>Bloxorz-RL</title>
     <script src="https://cdn.babylonjs.com/babylon.js"></script> <!-- Add this -->
   </head>
   <body onload="resizeCanvas()"> <!-- Ensure canvas resizes properly -->
-    <canvas id="renderCanvas"></canvas>
+     <div id="moveCounter" style="position: absolute; top: 20px; left: 20px; font-size: 18px; color: white; padding: 8%; justify-content: center;"> 
+     Moves: 0 
+    </div>
+  
+    <canvas id="renderCanvas">
+    </canvas>
     <script type="module" src="/src/main.js"></script>
     <script>
       function resizeCanvas() {

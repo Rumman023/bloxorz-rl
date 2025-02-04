@@ -1,9 +1,12 @@
 //block.js
-import { createBoard } from "./board";
 
 export class Block {
-    constructor(scene, light, shadowGenerator, initialState = { orientation: "standing", r, c }) {
+    constructor(scene, board, light, shadowGenerator, initialState = { orientation: "standing", r:1, c:1 }) {
       this.scene = scene;
+      this.targetr = board.targetTile.r;
+      this.targetc = board.targetTile.c;
+       
+     // console.log("test test", targetTile)
       // Create block mesh: standing dimensions (1x2x1)
       this.mesh = BABYLON.MeshBuilder.CreateBox("block", { width: 1, height: 2, depth: 1 }, scene);
       
@@ -23,8 +26,10 @@ export class Block {
 
         // Enable Shadows
         //this.mesh.receiveShadows = true;  // Block receives shadows
+        
         shadowGenerator.addShadowCaster(this.mesh); // Block casts shadows
         shadowGenerator.darkness = 0.05;
+        
 
       // Set initial state.
       this.state = { ...initialState };
@@ -34,6 +39,11 @@ export class Block {
       this.gameOver = false;
       // Flag to track if any animation is ongoing
       this.isAnimating = false; 
+
+      this.isCompleted = false;
+      this.shadowGenerator = shadowGenerator;
+      this.moveCounter = 0;
+      
     }
   
     // Updates mesh scaling, rotation, and position based on state.
@@ -56,6 +66,123 @@ export class Block {
         this.mesh.position = new BABYLON.Vector3(this.state.c, 0.5, this.state.r + 0.5);
       }
     }
+
+    checkCompletion() {
+        
+        if (this.isCompleted || this.gameOver) return false;
+        
+        // Only complete if block is standing upright
+        if (this.state.orientation !== "standing") return false;
+
+        // Check if block position matches target tile position
+        if (this.state.r === this.targetr && 
+            this.state.c === this.targetc) {
+            //shadowGenerator.removeShadowCaster(this.mesh);
+            this.playCompletionAnimation();
+            //problematic
+            this.gameOver = true;
+            
+            return true;
+        }
+        return false;
+    }
+
+    playCompletionAnimation() {
+        this.isCompleted = true;
+        this.isAnimating = true;
+
+        const startPos = this.mesh.position.clone();
+        const finalPos = startPos.clone();
+        finalPos.y = -1; // Final position will be at ground level
+
+        // Create position animation
+        const slideAnim = new BABYLON.Animation(
+            "slideAnim",
+            "position",
+            30,
+            BABYLON.Animation.ANIMATIONTYPE_VECTOR3
+        );
+
+        // Create scaling animation (optional - makes it look like it's fitting into the hole)
+        const scaleAnim = new BABYLON.Animation(
+            "scaleAnim",
+            "scaling",
+            30,
+            BABYLON.Animation.ANIMATIONTYPE_VECTOR3
+        );
+
+        // Define keyframes
+        slideAnim.setKeys([
+            { frame: 0, value: startPos },
+            { frame: 30, value: finalPos }
+        ]);
+
+        const startScale = this.mesh.scaling.clone();
+        const finalScale = new BABYLON.Vector3(0.98, 1, 0.98); // Slightly smaller to fit "hole"
+        
+        scaleAnim.setKeys([
+            { frame: 0, value: startScale },
+            { frame: 30, value: finalScale }
+        ]);
+
+        // Add easing for smooth animation
+        const easingFunction = new BABYLON.CubicEase();
+        easingFunction.setEasingMode(BABYLON.EasingFunction.EASINGMODE_EASEOUT);
+        slideAnim.setEasingFunction(easingFunction);
+        scaleAnim.setEasingFunction(easingFunction);
+
+        // Combine animations
+        this.mesh.animations = [slideAnim, scaleAnim];
+
+        this.shadowGenerator.removeShadowCaster(this.mesh);
+
+        // Play animation
+        this.scene.beginAnimation(this.mesh, 0, 30, false, 1, () => {
+            this.isAnimating = false;
+            // Dispatch completion event
+            document.dispatchEvent(new CustomEvent("levelcomplete"));
+        });
+
+        // Optional: Add particle effect for completion
+        this.createCompletionParticles();
+    }
+
+    // Add this method for particle effects (optional but adds nice visual feedback)
+    createCompletionParticles() {
+        const particleSystem = new BABYLON.ParticleSystem("completionParticles", 50, this.scene);
+        
+        // Particle texture
+        particleSystem.particleTexture = new BABYLON.Texture("texture/star.png", this.scene);
+        
+        // Set particle emission point to block position
+        particleSystem.emitter = this.mesh.position;
+        
+        // Particle properties
+        particleSystem.color1 = new BABYLON.Color4(1, 0.8, 0, 1.0);
+        particleSystem.color2 = new BABYLON.Color4(1, 0.5, 0, 1.0);
+        particleSystem.colorDead = new BABYLON.Color4(0, 0, 0, 0.0);
+        
+        particleSystem.minSize = 0.1;
+        particleSystem.maxSize = 0.3;
+        
+        particleSystem.minLifeTime = 0.5;
+        particleSystem.maxLifeTime = 1.5;
+        
+        particleSystem.emitRate = 50;
+        
+        // Emission speed
+        particleSystem.minEmitPower = 1;
+        particleSystem.maxEmitPower = 2;
+        
+        // Start the particle system
+        particleSystem.start();
+        
+        // Stop and dispose after animation
+        setTimeout(() => {
+            particleSystem.stop();
+            setTimeout(() => particleSystem.dispose(), 2000);
+        }, 1000);
+    }
   
     // Checks if the new state is within board bounds (assumes a 6x6 board).
     isValidState(newState, board) {
@@ -72,6 +199,10 @@ export class Block {
             return isValidTile(newState.r, newState.c) && isValidTile(newState.r + 1, newState.c);
         }
         return false;
+    }
+
+    updateMoveCounterDisplay() {
+        document.getElementById("moveCounter").innerText = `Moves: ${this.moveCounter}`;
     }
     
     
@@ -194,12 +325,25 @@ export class Block {
         if (this.isValidState(newState, board)) {
             this.isAnimating = true;
             this.animateMove(newState, direction);
-        } else {
+
+            this.moveCounter++; // Increase move count
+            this.updateMoveCounterDisplay(); // Update display
+
+            setTimeout(() => {
+                if (!this.gameOver) {
+                    this.checkCompletion();
+                }
+            }, 300);
+        } 
+        else {
             console.log("Invalid move", newState);
             this.isAnimating = true;
             this.fall(direction);
         }
     }
+
+    
+    
     
     // Animate the movement over a period of time
     animateMove(newState, direction) {

@@ -6,21 +6,31 @@ export function createGame(engine, canvas) {
   const scene = new BABYLON.Scene(engine);
 
   const levelMap = [
-    "ooo",
+    ["ooo",
     "oSoooo",
     "ooooooooo",
     "-ooooooooo",
     "-----ooToo",
-    "------ooo"
+    "------ooo"],
+
+    ["---.......",
+      "---.......",
+      "oooo-----ooo",
+      "ooo-------oo",
+      "ooo-------oo",
+      "oSo--oooo.....",
+      "ooo--oooo.....",
+      "-----oTo--..o.",
+      "-----ooo--...."]
 ];
 
   // Camera: fixed so arrow keys don't move it.
   const camera = new BABYLON.ArcRotateCamera(
     "Camera",
-    Math.PI / 3,
-    Math.PI / 4.5,
+    Math.PI / 2,
+    Math.PI / 6,
     17,
-    new BABYLON.Vector3(3, 0, 3),
+    new BABYLON.Vector3(5, 0, 5),
     scene
   );
   camera.attachControl(canvas, true);
@@ -38,12 +48,12 @@ export function createGame(engine, canvas) {
   shadowGenerator.blurKernel = 16; // Blur effect for realistic softness
 
   // Create the board
-  const board = createBoard(scene, levelMap);
+  const board = createBoard(scene, levelMap[1]);
 
   // Locate the start position dynamically
   let startRow = 0, startCol = 0;
-  for (let r = 0; r < levelMap.length; r++) {
-      let c = levelMap[r].indexOf('S');
+  for (let r = 0; r < levelMap[1].length; r++) {
+      let c = levelMap[1][r].indexOf('S');
       if (c !== -1) {
           startRow = r;
           startCol = c;
@@ -52,7 +62,7 @@ export function createGame(engine, canvas) {
   }
 
    // Create block at start position
-   const block = new Block(scene, sunlight, shadowGenerator, { orientation: "standing", r: startRow, c: startCol });
+   const block = new Block(scene, board, sunlight, shadowGenerator, { orientation: "standing", r: startRow, c: startCol });
 
    // Listen for key presses
    window.addEventListener("keydown", (event) => {
