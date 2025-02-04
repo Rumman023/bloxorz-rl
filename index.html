@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bloxorz Reinforcement Learning</title>
+    <script src="https://cdn.babylonjs.com/babylon.js"></script> <!-- Add this -->
+  </head>
+  <body onload="resizeCanvas()"> <!-- Ensure canvas resizes properly -->
+    <canvas id="renderCanvas"></canvas>
+    <script type="module" src="/src/main.js"></script>
+    <script>
+      function resizeCanvas() {
+        const canvas = document.getElementById("renderCanvas");
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
+      window.addEventListener("resize", resizeCanvas);
+    </script>
+  </body>
+  
+</html>
