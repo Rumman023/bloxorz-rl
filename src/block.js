@@ -1,43 +1,44 @@
-//block.js
-
 export class Block {
     constructor(scene, board, light, shadowGenerator, initialState = { orientation: "standing", r:1, c:1 }) {
       this.scene = scene;
       this.targetr = board.targetTile.r;
       this.targetc = board.targetTile.c;
+      this.r = initialState.r;
+      this.c = initialState.c;
        
      // console.log("test test", targetTile)
-      // Create block mesh: standing dimensions (1x2x1)
+ 
       this.mesh = BABYLON.MeshBuilder.CreateBox("block", { width: 1, height: 2, depth: 1 }, scene);
       
       const mat = new BABYLON.StandardMaterial("blockMat", scene);
-       // Load the diffuse texture (color texture)
+       
        mat.diffuseTexture = new BABYLON.Texture("texture/rustydiffuse.jpg", scene);
 
-       // Load the normal map (for surface depth and lighting effects)
+       
        mat.bumpTexture = new BABYLON.Texture("texture/rustynormal.jpg", scene);
 
-       // Adjust normal map strength (optional)
-       mat.bumpTexture.level = 0.7; // Increase or decrease for stronger/weaker effect
+       
+       mat.bumpTexture.level = 0.7; 
 
-       // Apply the material to the block
+       
        this.mesh.material = mat;
 
 
         // Enable Shadows
-        //this.mesh.receiveShadows = true;  // Block receives shadows
+        //this.mesh.receiveShadows = true;  
         
-        shadowGenerator.addShadowCaster(this.mesh); // Block casts shadows
+        shadowGenerator.addShadowCaster(this.mesh);
         shadowGenerator.darkness = 0.05;
         
 
-      // Set initial state.
+     
       this.state = { ...initialState };
+      this.initialState = { ...initialState };
       this.updateMesh();
   
-      // Flag to prevent further moves after game over.
+     
       this.gameOver = false;
-      // Flag to track if any animation is ongoing
+     
       this.isAnimating = false; 
 
       this.isCompleted = false;
@@ -46,21 +47,21 @@ export class Block {
       
     }
   
-    // Updates mesh scaling, rotation, and position based on state.
+   
     updateMesh() {
       if (this.state.orientation === "standing") {
         this.mesh.scaling = new BABYLON.Vector3(1, 1, 1);
         this.mesh.rotation = BABYLON.Vector3.Zero();
-        // The tile center is (c, -0.5, r), so the block's center is at (c, 1, r).
+     
         this.mesh.position = new BABYLON.Vector3(this.state.c, 1, this.state.r);
       } else if (this.state.orientation === "horizontal") {
-        // Lying along x-axis: occupies (r, c) and (r, c+1)
+       
         this.mesh.scaling = new BABYLON.Vector3(2, 0.5, 1);
         this.mesh.rotation = BABYLON.Vector3.Zero();
-        // Its center is the midpoint of the two tiles.
+       
         this.mesh.position = new BABYLON.Vector3(this.state.c + 0.5, 0.5, this.state.r);
       } else if (this.state.orientation === "vertical") {
-        // Lying along z-axis: occupies (r, c) and (r+1, c)
+        
         this.mesh.scaling = new BABYLON.Vector3(1, 0.5, 2);
         this.mesh.rotation = BABYLON.Vector3.Zero();
         this.mesh.position = new BABYLON.Vector3(this.state.c, 0.5, this.state.r + 0.5);
@@ -71,15 +72,15 @@ export class Block {
         
         if (this.isCompleted || this.gameOver) return false;
         
-        // Only complete if block is standing upright
+        
         if (this.state.orientation !== "standing") return false;
 
-        // Check if block position matches target tile position
+        
         if (this.state.r === this.targetr && 
             this.state.c === this.targetc) {
             //shadowGenerator.removeShadowCaster(this.mesh);
             this.playCompletionAnimation();
-            //problematic
+            //Problematic
             this.gameOver = true;
             
             return true;
@@ -93,9 +94,9 @@ export class Block {
 
         const startPos = this.mesh.position.clone();
         const finalPos = startPos.clone();
-        finalPos.y = -1; // Final position will be at ground level
+        finalPos.y = -0.9; 
 
-        // Create position animation
+        
         const slideAnim = new BABYLON.Animation(
             "slideAnim",
             "position",
@@ -103,7 +104,7 @@ export class Block {
             BABYLON.Animation.ANIMATIONTYPE_VECTOR3
         );
 
-        // Create scaling animation (optional - makes it look like it's fitting into the hole)
+    
         const scaleAnim = new BABYLON.Animation(
             "scaleAnim",
             "scaling",
@@ -111,53 +112,52 @@ export class Block {
             BABYLON.Animation.ANIMATIONTYPE_VECTOR3
         );
 
-        // Define keyframes
+        
         slideAnim.setKeys([
             { frame: 0, value: startPos },
             { frame: 30, value: finalPos }
         ]);
 
         const startScale = this.mesh.scaling.clone();
-        const finalScale = new BABYLON.Vector3(0.98, 1, 0.98); // Slightly smaller to fit "hole"
+        const finalScale = new BABYLON.Vector3(0.98, 1, 0.98);
         
         scaleAnim.setKeys([
             { frame: 0, value: startScale },
             { frame: 30, value: finalScale }
         ]);
 
-        // Add easing for smooth animation
+      
         const easingFunction = new BABYLON.CubicEase();
         easingFunction.setEasingMode(BABYLON.EasingFunction.EASINGMODE_EASEOUT);
         slideAnim.setEasingFunction(easingFunction);
         scaleAnim.setEasingFunction(easingFunction);
 
-        // Combine animations
+      
         this.mesh.animations = [slideAnim, scaleAnim];
 
         this.shadowGenerator.removeShadowCaster(this.mesh);
 
-        // Play animation
         this.scene.beginAnimation(this.mesh, 0, 30, false, 1, () => {
             this.isAnimating = false;
-            // Dispatch completion event
+            
             document.dispatchEvent(new CustomEvent("levelcomplete"));
         });
 
-        // Optional: Add particle effect for completion
+       
         this.createCompletionParticles();
     }
 
-    // Add this method for particle effects (optional but adds nice visual feedback)
+    
     createCompletionParticles() {
         const particleSystem = new BABYLON.ParticleSystem("completionParticles", 50, this.scene);
         
-        // Particle texture
+        
         particleSystem.particleTexture = new BABYLON.Texture("texture/star.png", this.scene);
         
-        // Set particle emission point to block position
+       
         particleSystem.emitter = this.mesh.position;
         
-        // Particle properties
+        
         particleSystem.color1 = new BABYLON.Color4(1, 0.8, 0, 1.0);
         particleSystem.color2 = new BABYLON.Color4(1, 0.5, 0, 1.0);
         particleSystem.colorDead = new BABYLON.Color4(0, 0, 0, 0.0);
@@ -170,25 +170,24 @@ export class Block {
         
         particleSystem.emitRate = 50;
         
-        // Emission speed
+       
         particleSystem.minEmitPower = 1;
         particleSystem.maxEmitPower = 2;
         
-        // Start the particle system
+       
         particleSystem.start();
         
-        // Stop and dispose after animation
         setTimeout(() => {
             particleSystem.stop();
             setTimeout(() => particleSystem.dispose(), 2000);
         }, 1000);
     }
   
-    // Checks if the new state is within board bounds (assumes a 6x6 board).
+   
     isValidState(newState, board) {
         const { tiles } = board;
     
-        // Check if within bounds and not stepping on '-'
+       
         const isValidTile = (r, c) => tiles[r]?.[c] && tiles[r][c] !== '-';
     
         if (newState.orientation === "standing") {
@@ -205,70 +204,7 @@ export class Block {
         document.getElementById("moveCounter").innerText = `Moves: ${this.moveCounter}`;
     }
     
-    
-  
-    // Computes a new state based on the given direction and moves the block.
-   /* move(direction, board) {
-        if (this.gameOver) return;
 
-        console.log(`Before Move: Orientation = ${this.state.orientation}, Position = (${this.state.r}, ${this.state.c})`);
-
-    
-        const newState = { ...this.state };
-    
-        if (this.state.orientation === "standing") {
-            if (direction === "left") {
-                newState.orientation = "horizontal";
-                newState.c = this.state.c + 1;
-            } else if (direction === "right") {
-                newState.orientation = "horizontal";
-                newState.c = this.state.c - 2;
-            } else if (direction === "up") {
-                newState.orientation = "vertical";
-                newState.r = this.state.r - 2;
-            } else if (direction === "down") {
-                newState.orientation = "vertical";
-                newState.r = this.state.r + 1;
-            }
-        } else if (this.state.orientation === "horizontal") {
-            if (direction === "left") {
-                newState.orientation = "standing";
-                newState.c = this.state.c + 2;
-            } else if (direction === "right") {
-                newState.orientation = "standing";
-                newState.c = this.state.c - 1;
-            } else if (direction === "up") {
-                newState.orientation = "horizontal";
-                newState.r = this.state.r - 1;
-            } else if (direction === "down") {
-                newState.orientation = "horizontal";
-                newState.r = this.state.r + 1;
-            }
-        } else if (this.state.orientation === "vertical") {
-            if (direction === "up") {
-                newState.orientation = "standing";
-                newState.r = this.state.r - 1;
-            } else if (direction === "down") {
-                newState.orientation = "standing";
-                newState.r = this.state.r + 2;
-            } else if (direction === "left") {
-                newState.orientation = "vertical";
-                newState.c = this.state.c + 1;
-            } else if (direction === "right") {
-                newState.orientation = "vertical";
-                newState.c = this.state.c - 1;
-            }
-        }
-    
-        if (this.isValidState(newState, board)) {
-            this.state = newState;
-            this.updateMesh();
-        } else {
-            console.log("Invalid move", newState);
-            this.fall(direction);
-        }
-    }
-    */
     move(direction, board) {
         if (this.isAnimating || this.gameOver) return;
     
@@ -276,7 +212,6 @@ export class Block {
     
         const newState = { ...this.state };
     
-        // Compute new state based on direction and current orientation
         if (this.state.orientation === "standing") {
             if (direction === "left") {
                 newState.orientation = "horizontal";
@@ -321,13 +256,12 @@ export class Block {
             }
         }
     
-        // Animate the movement if valid
         if (this.isValidState(newState, board)) {
             this.isAnimating = true;
             this.animateMove(newState, direction);
 
-            this.moveCounter++; // Increase move count
-            this.updateMoveCounterDisplay(); // Update display
+            this.moveCounter++;
+            this.updateMoveCounterDisplay(); 
 
             setTimeout(() => {
                 if (!this.gameOver) {
@@ -342,39 +276,58 @@ export class Block {
         }
     }
 
+    reset(initialState = null) {
+        
+        const resetState = initialState || this.initialState;
+        this.state = { ...resetState };
+        
+     
+        this.gameOver = false;
+        this.isAnimating = false;
+        this.isCompleted = false;
+        this.moveCounter = 0;
+        
+       
+        this.mesh.rotation = BABYLON.Vector3.Zero();
+        this.updateMesh();
+        
+        
+        if (!this.shadowGenerator.getShadowMap().renderList.includes(this.mesh)) {
+            this.shadowGenerator.addShadowCaster(this.mesh);
+        }
+    }
+
     
     
-    
-    // Animate the movement over a period of time
     animateMove(newState, direction) {
-        const duration = 300; // Animation duration in ms
-        const steps = 30; // Number of animation steps
+        const duration = 300;
+        const steps = 30; 
         const stepDuration = duration / steps;
     
         let step = 0;
         const startPos = this.mesh.position.clone();
         let pivot = new BABYLON.Vector3(0, 0, 0);
         let axis = new BABYLON.Vector3(0, 0, 0);
-        let angle = Math.PI / 2 / steps; // 90-degree rotation split over steps
+        let angle = Math.PI / 2 / steps; 
     
-        // Calculate pivot and axis based on current orientation and movement
+    
         if (this.state.orientation === "standing") {
-            // When standing (1x2x1), toppling in any direction
+            
             if (newState.orientation === "horizontal") {
-                // Toppling sideways (left/right)
+                
                 const isLeft = direction === "left";
                 pivot = new BABYLON.Vector3(
-                    startPos.x + (isLeft ? 0.5 : -0.5), // Pivot at bottom edge
-                    startPos.y - 1, // Bottom of block
+                    startPos.x + (isLeft ? 0.5 : -0.5), 
+                    startPos.y - 1, 
                     startPos.z
                 );
                 axis = new BABYLON.Vector3(0, 0, isLeft ? -1 : 1);
             } else if (newState.orientation === "vertical") {
-                // Toppling forward/backward (up/down)
+               
                 const isForward = direction === "up";
                 pivot = new BABYLON.Vector3(
                     startPos.x,
-                    startPos.y - 1, // Bottom of block
+                    startPos.y - 1, 
                     startPos.z + (isForward ? -0.5 : 0.5)
                 );
                 axis = new BABYLON.Vector3(isForward ? -1 : 1, 0, 0);
@@ -382,7 +335,7 @@ export class Block {
         } 
         else if (this.state.orientation === "horizontal") {
             if (newState.orientation === "standing") {
-                // Rising from horizontal to standing
+               
                 const isLeft = direction === "left";
                 pivot = new BABYLON.Vector3(
                     startPos.x + (isLeft ? 1 : -1),
@@ -391,7 +344,7 @@ export class Block {
                 );
                 axis = new BABYLON.Vector3(0, 0, isLeft ? -1 : 1);
             } else {
-                // Rolling while horizontal
+               
                 const delta = newState.r > this.state.r ? 0.5 : -0.5;
                 pivot = new BABYLON.Vector3(
                     startPos.x,
@@ -404,7 +357,7 @@ export class Block {
         }
         else if (this.state.orientation === "vertical") {
             if (newState.orientation === "standing") {
-                // Rising from vertical to standing
+                
                 const isUp = direction === "up";
                 pivot = new BABYLON.Vector3(
                     startPos.x,
@@ -413,7 +366,7 @@ export class Block {
                 );
                 axis = new BABYLON.Vector3(isUp ? -1 : 1, 0, 0);
             } else {
-                // Rolling while vertical
+                
                 const delta = newState.c > this.state.c ? 0.5 : -0.5;
                 pivot = new BABYLON.Vector3(
                     startPos.x + delta,
@@ -425,13 +378,13 @@ export class Block {
             }
         }
     
-        // Use requestAnimationFrame for smoother animation
+       
         const animate = (timestamp) => {
             if (step < steps) {
-                // Apply rotation around pivot point
+               
                 this.mesh.rotate(axis, angle, BABYLON.Space.WORLD);
                 
-                // Move the block around the pivot point
+                
                 this.mesh.position = this.mesh.position
                     .subtract(pivot)
                     .applyRotationQuaternion(BABYLON.Quaternion.RotationAxis(axis, angle))
@@ -440,7 +393,6 @@ export class Block {
                 step++;
                 requestAnimationFrame(animate);
             } else {
-                // Ensure final position and orientation are exact
                 this.state = newState;
                 this.updateMesh();
                 this.isAnimating = false;
@@ -452,22 +404,15 @@ export class Block {
     
     
     
-    
-  
-    // Animates the block falling off the board.
-    // Phase 1: The block rotates/tips naturally in the intended move direction until its entire body is off the board.
-    // Phase 2: Once completely off, it falls downward.
     fall(direction) {
         this.gameOver = true;
     
         const startPos = this.mesh.position.clone();
         const startRot = this.mesh.rotation.clone();
         
-        // Calculate edge point that will drag along the platform
         const edgePoint = startPos.clone();
         const pivotPoint = startPos.clone();
         
-        // Set pivot point and edge point based on direction
         switch(direction) {
             case "left":
                 pivotPoint.x += 0.5;
@@ -487,14 +432,12 @@ export class Block {
                 break;
         }
     
-        // Animation frames setup
-        const frames = {
+       const frames = {
             tilt: { start: 0, end: 12 },
             drag: { start: 12, end: 24 },
             fall: { start: 24, end: 36 }
         };
     
-        // Create animation for tilting phase
         const tiltAnim = new BABYLON.Animation(
             "tiltAnim",
             "rotation",
@@ -509,9 +452,8 @@ export class Block {
             BABYLON.Animation.ANIMATIONTYPE_VECTOR3
         );
     
-        // Calculate tilt rotation based on direction
         const tiltRot = startRot.clone();
-        const tiltAngle = Math.PI / 3; // 60 degrees tilt
+        const tiltAngle = Math.PI / 3; 
         
         switch(direction) {
             case "left":
@@ -528,8 +470,7 @@ export class Block {
                 break;
         }
     
-        // Set up dragging movement
-        const dragDistance = 2; // Distance to drag along edge
+        const dragDistance = 2; 
         const dragPos = edgePoint.clone();
         switch(direction) {
             case "left":
@@ -546,11 +487,9 @@ export class Block {
                 break;
         }
     
-        // Final position (falling off)
         const finalPos = dragPos.clone();
         finalPos.y = -25;
     
-        // Set animation keyframes
         tiltAnim.setKeys([
             { frame: frames.tilt.start, value: startRot },
             { frame: frames.tilt.end, value: tiltRot },
@@ -565,13 +504,12 @@ export class Block {
             { frame: frames.fall.end, value: finalPos }
         ]);
     
-        // Add easing functions
         tiltAnim.setEasingFunction(new BABYLON.CircleEase());
         tiltPosAnim.setEasingFunction(new BABYLON.CircleEase());
     
         this.mesh.animations = [tiltAnim, tiltPosAnim];
     
-        // Play the complete animation sequence
+    
         this.scene.beginAnimation(this.mesh, 0, frames.fall.end, false, 1, () => {
             console.log("Game Over");
             this.isAnimating = false;

@@ -1,4 +1,4 @@
-//game.js
+
 import { createBoard } from "./board.js";
 import { Block } from "./block.js";
 
@@ -24,7 +24,6 @@ export function createGame(engine, canvas) {
       "-----ooo--...."]
 ];
 
-  // Camera: fixed so arrow keys don't move it.
   const camera = new BABYLON.ArcRotateCamera(
     "Camera",
     Math.PI / 2,
@@ -36,24 +35,24 @@ export function createGame(engine, canvas) {
   camera.attachControl(canvas, true);
   camera.inputs.clear();
 
-  // Lighting - Sunlight effect
+
   const sunlight = new BABYLON.DirectionalLight("sunlight", new BABYLON.Vector3(-1, -2, -1), scene);
-  sunlight.direction = new BABYLON.Vector3(-0.5, -1, -0.5).normalize(); // Softer angle
-  sunlight.position = new BABYLON.Vector3(5, 5, 5); // Higher position
-  sunlight.intensity = 5; // Slightly bright sunlight
+  sunlight.direction = new BABYLON.Vector3(-0.5, -1, -0.5).normalize(); 
+  sunlight.position = new BABYLON.Vector3(5, 5, 5); 
+  sunlight.intensity = 5; 
 
-  // Enable shadows
+
   const shadowGenerator = new BABYLON.ShadowGenerator(1024, sunlight);
-  shadowGenerator.useBlurExponentialShadowMap = true; // Soft shadows
-  shadowGenerator.blurKernel = 16; // Blur effect for realistic softness
+  shadowGenerator.useBlurExponentialShadowMap = true; 
+  shadowGenerator.blurKernel = 16; 
 
-  // Create the board
-  const board = createBoard(scene, levelMap[1]);
+ 
+  const board = createBoard(scene, levelMap[0]);
 
-  // Locate the start position dynamically
+
   let startRow = 0, startCol = 0;
-  for (let r = 0; r < levelMap[1].length; r++) {
-      let c = levelMap[1][r].indexOf('S');
+  for (let r = 0; r < levelMap[0].length; r++) {
+      let c = levelMap[0][r].indexOf('S');
       if (c !== -1) {
           startRow = r;
           startCol = c;
@@ -61,16 +60,17 @@ export function createGame(engine, canvas) {
       }
   }
 
-   // Create block at start position
+
    const block = new Block(scene, board, sunlight, shadowGenerator, { orientation: "standing", r: startRow, c: startCol });
 
-   // Listen for key presses
    window.addEventListener("keydown", (event) => {
        const keyMap = { "ArrowLeft": "left", "ArrowRight": "right", "ArrowUp": "up", "ArrowDown": "down" };
        if (keyMap[event.key]) {
            block.move(keyMap[event.key], board);
        }
    });
+
+
   document.addEventListener("gameover", () => {
     //alert("Game Over!");
     restartGame(engine, canvas);
@@ -80,11 +80,11 @@ export function createGame(engine, canvas) {
   return scene;
 }
 
-// Restart function to reset the game
+
 function restartGame(engine, canvas) {
-  engine.dispose(); // Dispose of the old engine
-  const newEngine = new BABYLON.Engine(canvas, true); // Create a new engine instance
-  const newScene = createGame(newEngine, canvas); // Restart the game
+  engine.dispose();
+  const newEngine = new BABYLON.Engine(canvas, true); 
+  const newScene = createGame(newEngine, canvas); 
   newEngine.runRenderLoop(() => {
       newScene.render();
   });

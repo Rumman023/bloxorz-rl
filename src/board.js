@@ -1,4 +1,3 @@
-//board.js
 export function createBoard(scene, levelMap) {
     const tiles = [];
     const rows = levelMap.length;
@@ -36,7 +35,6 @@ export function createBoard(scene, levelMap) {
                 tile.position = new BABYLON.Vector3(c, 0, r);
                 tile.receiveShadows = true;
 
-                // Create border mesh (slightly larger and positioned underneath)
                 const border = BABYLON.MeshBuilder.CreateGround(`border-${r}-${c}`, {
                     width: tileSize,
                     height: tileSize
@@ -44,12 +42,11 @@ export function createBoard(scene, levelMap) {
                 border.position = new BABYLON.Vector3(c, -0.001, r);
                 border.receiveShadows = true;
 
-                // Material for border
                 const borderMat = new BABYLON.StandardMaterial(`borderMat-${r}-${c}`, scene);
                 borderMat.diffuseColor = new BABYLON.Color3(0.149, 0.149, 0.149); // Dark brown
                 border.material = borderMat;
 
-                // PBR material for tile
+       
                 const mat = new BABYLON.PBRMaterial(`mat-${r}-${c}`, scene);
                 mat.albedoTexture = diffuseTexture;
                 mat.bumpTexture = normalTexture;
@@ -62,7 +59,7 @@ export function createBoard(scene, levelMap) {
                 if (levelMap[r][c] === 'T') {
                     const hollow = BABYLON.MeshBuilder.CreateBox(`hollow-${r}-${c}`, {
                         width: tileSize - 0.05,
-                        height: tileThickness * 1, // Raised walls
+                        height: tileThickness * 1, 
                         depth: tileSize - 0.05
                     }, scene);
                     
@@ -73,11 +70,11 @@ export function createBoard(scene, levelMap) {
                     
                     //console.log(targetTile)
                 
-               //continue
+              
                 }
 
                 else {
-                    // Create solid tile
+                    
                     const tile = BABYLON.MeshBuilder.CreateBox(`tile-${r}-${c}`, {
                         width: tileSize - 0.02,
                         height: tileThickness,
