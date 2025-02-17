@@ -1,4 +1,4 @@
-# Bloxorz Reinforcement Learning
+# Bloxorz RL
 
 This project implements a reinforcement learning (RL) agent to solve the Bloxorz puzzle game using Q-learning. The game is rendered using Babylon.js, and the RL agent learns to navigate the block to the target tile. Also users can manually move the block with the up-down-left-right key to solve the puzzle. Currently only 2 levels are implemented in this game.
 
